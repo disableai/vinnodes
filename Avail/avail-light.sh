@@ -17,41 +17,29 @@ sudo apt update && sudo apt upgrade -y
 
 echo -e "\e[1m\e[32m2. Installing dependencies... \e[0m" && sleep 1
 # packages
-sudo apt install curl tar wget clang pkg-config protobuf-compiler libssl-dev jq build-essential protobuf-compiler bsdmainutils git make ncdu gcc git jq chrony liblz4-tool -y
+sudo apt install make clang pkg-config libssl-dev build-essential
 
-# install rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
-rustup default stable
-rustup update
-rustup update nightly
-rustup target add wasm32-unknown-unknown --toolchain nightly
-sleep 1
-
-echo -e "\e[1m\e[32m3. Downloading and building binaries... \e[0m" && sleep 1
 # download binary
-git clone https://github.com/availproject/avail-light.git
+echo -e "\e[1m\e[32m3. Downloading and building binaries... \e[0m" && sleep 1
+mkdir -p ${HOME}/avail-light
 cd avail-light
-wget -O config.yaml https://raw.githubusercontent.com/thenhthang/vinnodes/main/Avail/config.yaml
-git checkout v1.7.5
-cargo build --release
-sudo cp $HOME/avail-light/target/release/avail-light /usr/local/bin
+wget https://github.com/availproject/avail-light/releases/download/v1.7.5/avail-light-linux-amd64.tar.gz
+tar -xvzf avail-light-linux-amd64.tar.gz
+cp avail-light-linux-amd64 avail-light
+
 # create service
 sudo tee /etc/systemd/system/availightd.service > /dev/null <<EOF
-[Unit]
+[Unit] 
 Description=Avail Light Client
-After=network-online.target
-
-[Service]
-User=$USER
-ExecStart=$(which avail-light) --config $HOME/avail-light/config.yaml --network goldberg
-Restart=on-failure
-RestartSec=3
-LimitNOFILE=65535
-
-[Install]
+After=network.target
+StartLimitIntervalSec=0
+[Service] 
+User=root 
+ExecStart=/root/avail-light/avail-light --network goldberg
+Restart=always 
+RestartSec=120
+[Install] 
 WantedBy=multi-user.target
-EOF
 
 echo -e "\e[1m\e[32m4. Starting service... \e[0m" && sleep 1
 # start service
